@@ -32,11 +32,13 @@ def save_images(images: list, outdir:Path, ant:str):
     print('Done saving.')
 
 def generate_individual_exams(pdf_file: Path, outdir: Path) -> None:
+    print(f'Reading {pdf_file}...', flush=True)
     images = convert_from_path(pdf_file, fmt='jpg')
+    print('done.')
     ant_id = ''
-    image_current = []
     qcd = cv2.QRCodeDetector()
-    for i, image in enumerate(images):
+    image_current = []
+    for _, image in enumerate(images):
         retval, decoded_info, points, straight_qrcode = qcd.\
             detectAndDecodeMulti(np.asarray(image))
         if retval:
@@ -44,18 +46,16 @@ def generate_individual_exams(pdf_file: Path, outdir: Path) -> None:
             if student_id != ant_id:
                 if ant_id != '':
                     print(f'\nSaving {ant_id}...')
-                    save_images(images_current, outdir, ant_id)
-                images_current = [image]
-                print(f'Found new student student {student_id}...', end='')
+                    save_images(image_current, outdir, ant_id)
+                print(f'Found new student student {student_id}...', flush=True)
                 ant_id = student_id
+                image_current = [image]
             else:
-                images_current.append(image)
-                print('.', end='')
+                image_current.append(image)
         else:
-            images_current.append(image)
-            print('.', end='')
+            image_current.append(image)
     if ant_id != '':
-        save_images(images_current, outdir, ant_id)
+        save_images(image_current, outdir, ant_id)
 
 def main():
     argparser = argparse.ArgumentParser(description='Split exams into individual student exams.')
