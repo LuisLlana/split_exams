@@ -23,6 +23,13 @@ Parameters
 --exam <exam_file> (defaults to 'exam.tex'
 --group <group_name> (defaults to 'group')
 --student_file <student_file> (defaults to 'group.csv')
+
+The student file is a CSV file with the following columns, downloaded from
+GEA
+
+FOTOGRAFÍA,NOMBRE COMPLETO,DOCUMENTO,MAT.,CONV.,OBSERVACIÓN,CORREO,MOODLE_ID ,"Abellán Lapeña, Daniel",49147886Z,1,1,,daniab01@ucm.es,6640
+,"AIT EL HAJ SABIH, HAFSA",03477456V,1,1,,hafsaait@ucm.es,6641
+
 '''
 
 
@@ -46,7 +53,8 @@ class StatusDict(TypedDict):
     status: str
 
 class StudentDict(TypedDict):
-    name: str
+    firstname: str
+    lastname: str
     email: str
 
 class Exam:
@@ -92,11 +100,14 @@ class Exam:
         return examtext
 
 
-    def generate_pdf(self, student: StudentDict) -> StatusDict:
+    def generate_pdf(self, ordered_student: tuple[int, StudentDict])\
+            -> StatusDict:
+        student = ordered_student[1]
+        order = ordered_student[0]
         student_id = student['email'].split('@')[0]
-        student_name = student['name']
+        student_name = f'{student['lastname']}, {student['firstname']}'
         st_exam = self._generate_exam(student_id, student_name)
-        st_exam_path = Path(f'{student_id}_{self.exam.name}')
+        st_exam_path = Path(f'{order:03}_{student_id}_{self.exam.name}')
         (self.group / st_exam_path).write_text(st_exam)
         print(f'Generating exam for student: {student_name} ({student_id}) in {st_exam_path.name}...')
         for _ in range(3):
@@ -113,13 +124,25 @@ class Exam:
                 'status': 'OK'}
 
 
+
+def row2student(row: dict[str, str]) -> StudentDict:
+    '''Convert a CSV row to a StudentDict
+FOTOGRAFÍA,NOMBRE COMPLETO,DOCUMENTO,MAT.,CONV.,OBSERVACIÓN,CORREO,MOODLE_ID ,"Abellán Lapeña, Daniel",49147886Z,1,1,,daniab01@ucm.es,6640
+,"AIT EL HAJ SABIH, HAFSA",03477456V,1,1,,hafsaait@ucm.es,6641
+    '''
+    lastname, firstname = row['NOMBRE COMPLETO'].split(',')
+    return {'firstname': firstname.strip(),
+            'lastname': lastname.strip(),
+            'email': row['CORREO']}
+
 def generate_exams(exam: Exam,
                    student_file: Path) -> list[StatusDict]:
     with open(student_file, 'r') as fl:
-        students = list(DictReader(fl))
+        students = enumerate(sorted(map(row2student, DictReader(fl)),
+                                    key=lambda s: (s['lastname'], s['firstname'])))
         print(f"c1, {students}")
         pool = Pool()
-        lst = list(pool.map(exam.generate_pdf, students))
+        lst = list(pool.map(exam.generate_pdf, list(students)))
     return lst
 
 def main() -> None:
@@ -128,17 +151,17 @@ def main() -> None:
                         default='exam.tex', help='Exam template file')
     parser.add_argument('--group', type=str,
                         default='group', help='Group name for the exams')
-    parser.add_argument('--student_file', type=str,
+    parser.add_argument('--student_file', type=Path,
                         help = 'CSV file with students data, defaults to the argument of group ended in .csv',
                         default='')
     args = parser.parse_args()
 
     exam = Exam(Path(args.exam), Path(args.group))
     student_file = args.student_file
-    if args.student_file == '':
-        student_file = Path(f'{args.group}.csv')
+    if args.student_file:
+        student_file = args.student_file
     else:
-        student_file = Path(args.student_file)
+        student_file = Path(f'{args.group}.csv')
 
     status = generate_exams(exam, student_file)
     error_lst = list(filter(lambda s: s['status'] == 'ERROR',
