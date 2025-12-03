@@ -23,7 +23,11 @@ Parameters
 --exam <exam_file> (defaults to 'exam.tex'
 --group <group_name> (defaults to 'group')
 --student_file <student_file> (defaults to 'group.csv')
+
+
+Modifcació
 '''
+
 
 
 from csv import DictReader
