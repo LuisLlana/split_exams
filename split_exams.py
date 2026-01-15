@@ -19,7 +19,6 @@ Parameters
 
 
 import argparse
-import shutil
 from pathlib import Path
 from pdf2image import convert_from_path, convert_from_bytes
 import numpy as np
@@ -69,8 +68,8 @@ def main():
     else:
         outdir = Path(args.outdir)
     pdf_file = Path(args.pdf)
-    shutil.rmtree(outdir, ignore_errors=True)
-    outdir.mkdir()
+    if not outdir.exists():
+        outdir.mkdir(parents=True)
     generate_individual_exams(pdf_file, outdir)
 
 
