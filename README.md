@@ -27,7 +27,7 @@ El programa genera un fichero nuevo por cada alumno datos.
   options:
     -h, --help              show this help message and exit
     --destdir DESTDIR       Destir of PDF files, defaults to exam without the suffix
-    -f, --csvfile CSVFILE   CSV file with the student data
+    -f, --csvfile CSVFILE   CSV file with the student data, default: alumnos.csv
 
 El fichero CSV es el que se descarga de GEA. Tiene el siguiente
 formato
