@@ -38,16 +38,19 @@ def generate_individual_exams(pdf_file: Path, outdir: Path) -> None:
     ant_id = ''
     qcd = cv2.QRCodeDetector()
     image_current = []
-    for _, image in enumerate(images):
+    for i, image in enumerate(images):
         retval, decoded_info, points, straight_qrcode = qcd.\
             detectAndDecodeMulti(np.asarray(image))
         if retval:
             student_id = decoded_info[0]
-            if student_id != ant_id:
+            if student_id !='' and student_id != ant_id:
                 if ant_id != '':
-                    print(f'\nSaving {ant_id}...')
+                    print(f'pdftk {pdf_file} cat {ini_page}-{i} output {outdir}/{ant_id}.pdf')
+                    print(f'\nSaving {ini_page}-{i} {ant_id}...')
+
                     save_images(image_current, outdir, ant_id)
                 print(f'Found new student student {student_id}...', flush=True)
+                ini_page = i+1
                 ant_id = student_id
                 image_current = [image]
             else:
@@ -61,7 +64,7 @@ def main():
     argparser = argparse.ArgumentParser(description='Split exams into individual student exams.')
     argparser.add_argument('--pdf', type=str, default='todo.pdf',
                             help='PDF file to split into individual student exams.')
-    argparser.add_argument('--outdir', type=str, default='',
+    argparser.add_argument('--outdir', type=str, required=True,
                            help='Output directory for individual student exams.')
     args = argparser.parse_args()
     if args.outdir == '':

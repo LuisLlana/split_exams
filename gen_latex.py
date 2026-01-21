@@ -137,6 +137,7 @@ FOTOGRAFÍA,NOMBRE COMPLETO,DOCUMENTO,MAT.,CONV.,OBSERVACIÓN,CORREO,MOODLE_ID ,
 
 def generate_exams(exam: Exam,
                    student_file: Path) -> list[StatusDict]:
+    print(f'Reading students from {student_file}...')
     with open(student_file, 'r') as fl:
         students = enumerate(sorted(map(row2student, DictReader(fl)),
                                     key=lambda s: (s['lastname'], s['firstname'])))
@@ -152,17 +153,16 @@ def main() -> None:
     parser.add_argument('--group', type=str,
                         default='group', help='Group name for the exams')
     parser.add_argument('--student_file', type=Path,
-                        help = 'CSV file with students data, defaults to the argument of group ended in .csv',
-                        default='')
+                        help = 'CSV file with students data, defaults to the argument of group ended in .csv')
     args = parser.parse_args()
 
     exam = Exam(Path(args.exam), Path(args.group))
     student_file = args.student_file
     if args.student_file:
-        student_file = args.student_file
+        student_file = Path(args.student_file)
     else:
         student_file = Path(f'{args.group}.csv')
-
+    print(f'Generating exams for group {exam.group} from :{student_file}: using template {exam.exam}...')
     status = generate_exams(exam, student_file)
     error_lst = list(filter(lambda s: s['status'] == 'ERROR',
                             status))
