@@ -31,9 +31,7 @@ with all the axuiliary files as in the folder exam
           --destdir DESTDIR      Destir of PDF files, defaults to exam without the suffix
           -f, --csvfile CSVFILE  CSV file with the student data, default: alumnos.csv
 
-
-The student file is a CSV file with the following columns, downloaded from
-GEA
+The student file is a CSV file with the following columns, downloaded from GEA
 
 FOTOGRAFÍA,NOMBRE COMPLETO,DOCUMENTO,MAT.,CONV.,OBSERVACIÓN,CORREO,MOODLE_ID ,"Abellán Lapeña, Daniel",49147886Z,1,1,,daniab01@ucm.es,6640
 ,"AIT EL HAJ SABIH, HAFSA",03477456V,1,1,,hafsaait@ucm.es,6641
@@ -155,6 +153,7 @@ FOTOGRAFÍA,NOMBRE COMPLETO,DOCUMENTO,MAT.,CONV.,OBSERVACIÓN,CORREO,MOODLE_ID ,
 
 def generate_exams(exam: Exam,
                    student_file: Path) -> list[StatusDict]:
+    print(f'Reading students from {student_file}...')
     with open(student_file, 'r') as fl:
         students = enumerate(sorted(map(row2student, DictReader(fl)),
                                     key=lambda s: (s['lastname'], s['firstname'])))
