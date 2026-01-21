@@ -17,17 +17,26 @@ una definición del tipo
 
 El programa genera un fichero nuevo por cada alumno datos.
 
-	usage: python gen_latex.py [-h] [--exam EXAM] [--group GROUP] [--student_file STUDENT_FILE]
+  usage: gen_latex.py [-h] [--destdir DESTDIR] -f CSVFILE exam
 
-	Generate Exams to students
+  Generate Exams to students
 
-	options:
-	  -h, --help            show this help message and exit
-	  --exam EXAM           Exam template file
-	  --group GROUP         Group name for the exams
-	  --student_file STUDENT_FILE
-	                        CSV file with students data, defaults to the argument of group ended in .csv
+  positional arguments:
+    exam                  Exam template file
 
+  options:
+    -h, --help              show this help message and exit
+    --destdir DESTDIR       Destir of PDF files, defaults to exam without the suffix
+    -f, --csvfile CSVFILE   CSV file with the student data
+
+El fichero CSV es el que se descarga de GEA. Tiene el siguiente
+formato
+FOTOGRAFÍA,NOMBRE COMPLETO,DOCUMENTO,MAT.,CONV.,OBSERVACIÓN,CORREO,MOODLE_ID
+,"Abellán Lapeña, Daniel",49147886Z,1,1,,daniab01@ucm.es,6640
+,"AIT EL HAJ SABIH, HAFSA",03477456V,1,1,,hafsaait@ucm.es,6641
+,"Alciturri Alvarez, Francisco Javier",06679809B,1,1,,franalci@ucm.es,6642
+
+Sólo se usan los campos "NOMBRE COMPLETO" y "CORREO".
 
 Los ficheros se generan en una carpeta como el nombre del grupo
 

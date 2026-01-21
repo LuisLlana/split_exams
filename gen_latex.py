@@ -58,9 +58,9 @@ class StudentDict(TypedDict):
     email: str
 
 class Exam:
-    def __init__(self, exam: Path, group: Path) -> None:
+    def __init__(self, exam: Path, destdir: Path) -> None:
         self._exam = exam
-        self._group = group
+        self._destdir = destdir
         self._examtext = self._exam.read_text()
         self._generate_group_dir()
 
@@ -69,8 +69,8 @@ class Exam:
         return self._exam
 
     @property
-    def group(self) -> Path:
-        return self._group
+    def destdir(self) -> Path:
+        return self._destdir
 
     @property
     def examtext(self) -> str:
@@ -78,10 +78,11 @@ class Exam:
 
 
     def _generate_group_dir(self) -> None:
-        if self.group.exists():
-            shutil.rmtree(self.group)
-        examdir = self.exam.parent
-        shutil.copytree(examdir, self.group)
+        if self.destdir.exists():
+            shutil.rmtree(self.destdir)
+        self.destdir.mkdir()
+        # examdir = self.exam.parent
+        # shutil.copytree(examdir, self.group)
 
 
     def _generate_exam(self, student_id: str, student_name: str) -> str:
@@ -95,7 +96,7 @@ class Exam:
                           f'\\\\newcommand{{\\\\email}}{{{student_id}}}',
                           examtext)
         examtext = re.sub(r'\\newcommand\{\\grupo\}.*',
-                          f'\\\\newcommand{{\\\\grupo}}{{{self.group.name}}}',
+                          f'\\\\newcommand{{\\\\grupo}}{{{self.destdir.name}}}',
                           examtext)
         return examtext
 
@@ -108,18 +109,27 @@ class Exam:
         student_name = f'{student['lastname']}, {student['firstname']}'
         st_exam = self._generate_exam(student_id, student_name)
         st_exam_path = Path(f'{order:03}_{student_id}_{self.exam.name}')
-        (self.group / st_exam_path).write_text(st_exam)
+        st_exam_path.write_text(st_exam)
         print(f'Generating exam for student: {student_name} ({student_id}) in {st_exam_path.name}...')
         for _ in range(3):
             cmd = shlex.split(f'pdflatex  -interaction=nonstopmode -halt-on-error {st_exam_path}')
-            rcode = subprocess.run(cmd, cwd=self.group,
-                                   stdout=subprocess.DEVNULL,
-                                   stderr=subprocess.DEVNULL)
+            rcode = subprocess.run(cmd, # cwd=self.group,
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                                   )
             if rcode.returncode != 0:
-                print('Error generating PDF')
+                print(f'Error generating PDF: {rcode.returncode} {student_id}')
                 return {'student': student_id,
                         'status': 'ERROR'}
-            print(f'Exam for student {student_name} ({student_id}) generated successfully.')
+            # move the pdf to the group directory
+        pdf_name = st_exam_path.with_suffix('.pdf').name
+        shutil.move(pdf_name, self.destdir)
+        # clean auxiliary files
+        for ext in ['.aux', '.log', '.tex']:
+            aux_file = st_exam_path.with_suffix(ext)
+            if aux_file.exists():
+                aux_file.unlink()
+                #shutil.move(aux_file, self.group)
+        print(f'Exam for student {student_name} ({student_id}) generated successfully.')
         return {'student': student_id,
                 'status': 'OK'}
 
@@ -141,29 +151,30 @@ def generate_exams(exam: Exam,
     with open(student_file, 'r') as fl:
         students = enumerate(sorted(map(row2student, DictReader(fl)),
                                     key=lambda s: (s['lastname'], s['firstname'])))
-        print(f"c1, {students}")
         pool = Pool()
         lst = list(pool.map(exam.generate_pdf, list(students)))
     return lst
 
 def main() -> None:
     parser = argparse.ArgumentParser(description='Generate Exams to students')
-    parser.add_argument('--exam', type=str,
-                        default='exam.tex', help='Exam template file')
-    parser.add_argument('--group', type=str,
-                        default='group', help='Group name for the exams')
-    parser.add_argument('--student_file', type=Path,
-                        help = 'CSV file with students data, defaults to the argument of group ended in .csv')
-    args = parser.parse_args()
+    parser.add_argument('--destdir', type=Path,
+                        default=None, help='Destir of PDF files, defaults to exam without the suffix')
+    parser.add_argument('-f', '--csvfile', type=Path, required=True,
+                        help='CSV file with the student data')
+    parser.add_argument('exam', type=Path,
+                        help='Exam template file')
 
-    exam = Exam(Path(args.exam), Path(args.group))
-    student_file = args.student_file
-    if args.student_file:
-        student_file = Path(args.student_file)
-    else:
-        student_file = Path(f'{args.group}.csv')
-    print(f'Generating exams for group {exam.group} from :{student_file}: using template {exam.exam}...')
-    status = generate_exams(exam, student_file)
+    args = parser.parse_args()
+    destdir = args.destdir
+
+    if destdir is None:
+        destdir = args.exam.with_suffix('')
+
+    exam = Exam(args.exam, destdir)
+    csvfile = args.csvfile
+
+    print(f'Generating exams in directory {destdir} from {csvfile}...')
+    status = generate_exams(exam, csvfile)
     error_lst = list(filter(lambda s: s['status'] == 'ERROR',
                             status))
     error_count = len(error_lst)
