@@ -19,10 +19,17 @@ the group.
 The program will delete the group directory if it exists and create a new one.
 with all the axuiliary files as in the folder exam
 
-Parameters
---exam <exam_file> (defaults to 'exam.tex'
---group <group_name> (defaults to 'group')
---student_file <student_file> (defaults to 'group.csv')
+        usage: gen_latex.py [-h] [--destdir DESTDIR] -f CSVFILE exam
+
+        Generate Exams to students
+
+        positional arguments:
+          exam                  Exam template file
+
+        options:
+          -h, --help             show this help message and exit
+          --destdir DESTDIR      Destir of PDF files, defaults to exam without the suffix
+          -f, --csvfile CSVFILE  CSV file with the student data, default: alumnos.csv
 
 The student file is a CSV file with the following columns, downloaded from
 GEA
@@ -160,7 +167,8 @@ def main() -> None:
     parser.add_argument('--destdir', type=Path,
                         default=None, help='Destir of PDF files, defaults to exam without the suffix')
     parser.add_argument('-f', '--csvfile', type=Path, required=True,
-                        help='CSV file with the student data')
+                        default=Path('alumnos.csv'),
+                        help='CSV file with the student data, default: alumnos.csv')
     parser.add_argument('exam', type=Path,
                         help='Exam template file')
 
